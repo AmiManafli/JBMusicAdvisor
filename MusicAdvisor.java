@@ -1,124 +1,67 @@
 package advisor;
 
-import com.sun.net.httpserver.HttpServer;
-
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
+
 public class MusicAdvisor {
-    Scanner scanner = new Scanner(System.in);
-    boolean exit = false;
-    boolean authorized = false;
-    private String access_code;
-    HttpRequestHandler httpRequestHandler;
-    HttpServer server;
-    String serverPath;
+    boolean adviceOn = false;
 
-    List<String> newReleases;
-    List<String> featured;
-    List<String> categories;
-    List<String> mood;
-
-    public MusicAdvisor(String serverPath) {
-        this.serverPath = serverPath;
+    void advise() {
+        adviceOn = true;
+        chooseCommand();
     }
 
+    void chooseCommand() {
+        Scanner scanner = new Scanner(System.in);
 
-    void listsInit() {
-        newReleases = Arrays.asList("Mountains [Sia, Diplo, Labrinth]",
-                "Runaway [Lil Peep]",
-                "The Greatest Show [Panic! At The Disco]",
-                "All Out Life [Slipknot]");
-        featured = Arrays.asList("Mellow Morning",
-                "Wake Up and Smell the Coffee",
-                "Songs to Sing in the Shower");
-        categories = Arrays.asList("Top Lists",
-                "Pop",
-                "Mood",
-                "Lating");
-        mood = Arrays.asList("Walk LIke A Badass",
-                "Rage Beats",
-                "Arab Mood Booster",
-                "Sunday Stroll");
-    }
+        while (!scanner.hasNext("auth")) {
+            if (scanner.nextLine().equals("exit")) { exit(); break; }
+            System.out.println("Please, provide access for application.");
+        }
 
+        while (adviceOn) {
+            String command = scanner.next();
 
-    void processInput() {
-        while (!exit && scanner.hasNext()) {
-            String input = scanner.nextLine();
-            if (!authorized) {
-                if ("auth".equals(input)) {
-                    Util util = new Util(serverPath);
-                    httpRequestHandler = new HttpRequestHandler();
-                    server = httpRequestHandler.serverSetup();
-                    if (server != null) {
-                        httpRequestHandler.createContext(
-                                util.getCLIENT_ID(),
-                                util.getCLIENT_SECRET(),
-                                serverPath,
-                                this::printSuccess
-                        );
-                        server.start();
-                    }
-                    String urlAccessRequest = util.getAuthLink();
-                    System.out.println("Input system path: " + serverPath);
-                    System.out.println("use this link to request the access code:\n" + urlAccessRequest);
-                    System.out.println("\nwaiting for code...");
-                    String accessToken = httpRequestHandler.getAccessToken();
-                    if (accessToken != null) {
-                        System.out.println("response:");
-                        System.out.println(accessToken);
-                        System.out.println("\n---SUCCESS---");
-                    }
-                    authorized = true;
-                } else {
-                    System.out.println("Please, provide access for application.");
-                    continue;
-                }
+            if (command.contains("playlists")) {
+                String category = command.split("playlists ")[1];
+                System.out.printf("---%s PLAYLISTS---\n", category.toUpperCase());
+                continue;
             }
-            processCommand(input);
+
+            switch(command) {
+                case "new":
+                    System.out.println("---NEW RELEASES---");
+                    break;
+                case "featured":
+                    System.out.println("---FEATURED---");
+                    break;
+                case "categories":
+                    System.out.println("---CATEGORIES---");
+                    break;
+                case "exit":
+                    exit();
+                    break;
+                case "auth":
+                    auth();
+                    break;
+                default:
+                    error();
+            }
         }
     }
 
-    public void printSuccess(String accessToken) {
-        System.out.println("response: ");
-        System.out.println(accessToken);
-        System.out.println("---SUCCESS---");
+    void auth() {
+        Authorization auth = new Authorization();
+        auth.createHttpServer();
+        auth.authRequest();
     }
 
-
-    private void processCommand(String input) {
-        switch (input) {
-            case "new":
-                System.out.println("---NEW RELEASES---");
-                print(newReleases);
-                break;
-            case "featured":
-                System.out.println("---FEATURED---");
-                print(featured);
-                break;
-            case "categories":
-                System.out.println("---CATEGORIES---");
-                print(categories);
-                break;
-            case "playlists Mood":
-                System.out.println("---MOOD PLAYLISTS---");
-                print(mood);
-                break;
-            case "exit":
-                System.out.println("---GOODBYE!---");
-                httpRequestHandler.server.stop(1);
-//                System.out.println(server.getAddress());
-                exit = true;
-                break;
-        }
+    void error() {
+        System.out.println("Incorrect command. Try again.");
     }
 
-    private static void print(List<String> listOfStrings) {
-        for (String element : listOfStrings) {
-            System.out.println(element);
-        }
+    void exit() {
+        System.out.println("---GOODBYE!---");
+        adviceOn = false;
     }
-
 }
