@@ -28,20 +28,22 @@ public class HttpRequestHandler {
 
     void createContext(String clientID, String client_secret, String serverPath, Consumer<String> successCallback) {
         server.createContext("/", httpExchange -> {
-            String redirecting = "Redirecting to you application";
             if ("GET".equals(httpExchange.getRequestMethod())) {
                 query = httpExchange.getRequestURI().getQuery();
+                String webMessage = "";
                 System.out.println("Received query: " + query);
-                String[] queryParts = query.split("=");
-                if ("code".equals(queryParts[0])) {
-                    accessCode = queryParts[1];
-                    System.out.println("code received");
-                } else if ("error".equals(queryParts[0])) {
-                    System.out.println("error receiving code");
+
+                if (query != null && query.startsWith("code=")) {
+                    webMessage = "Got the code. Return back to your program.";
+                } else {
+                    webMessage = "Not found authorization code. Try again."; //Authorization code not found. Try again
                 }
-                httpExchange.sendResponseHeaders(200, redirecting.length());
-                httpExchange.getResponseBody().write(redirecting.getBytes());
+                accessCode = query.split("=")[1];
+
+                httpExchange.sendResponseHeaders(200, webMessage.length());
+                httpExchange.getResponseBody().write(webMessage.getBytes());
                 httpExchange.getResponseBody().close();
+                httpExchange.close();
             }
 
             HttpClient client = HttpClient.newHttpClient();
@@ -58,7 +60,8 @@ public class HttpRequestHandler {
                 System.out.println("making http request for access token...");
                 HttpResponse<String> response = client.send(request,
                         HttpResponse.BodyHandlers.ofString());
-                successCallback.accept(response.body());
+                accessToken = response.body();
+                successCallback.accept(accessToken);
                 server.stop(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();

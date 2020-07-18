@@ -10,8 +10,6 @@ public class MusicAdvisor {
     Scanner scanner = new Scanner(System.in);
     boolean exit = false;
     boolean authorized = false;
-    private final String clientID = "8e8547fb06414c2cb62c9f91a2b86041";
-    private final String client_secret = "00dff940af8542f4a104b4c74e8c5d17";
     private String access_code;
     HttpRequestHandler httpRequestHandler;
     HttpServer server;
@@ -51,15 +49,19 @@ public class MusicAdvisor {
             String input = scanner.nextLine();
             if (!authorized) {
                 if ("auth".equals(input)) {
+                    Util util = new Util(serverPath);
                     httpRequestHandler = new HttpRequestHandler();
                     server = httpRequestHandler.serverSetup();
                     if (server != null) {
-                        httpRequestHandler.createContext(clientID, client_secret, serverPath, this::printSuccess);
+                        httpRequestHandler.createContext(
+                                util.getCLIENT_ID(),
+                                util.getCLIENT_SECRET(),
+                                serverPath,
+                                this::printSuccess
+                        );
                         server.start();
                     }
-                    String urlAccessRequest = String.format(
-                            "%s/authorize?client_id=%s" +
-                            "&redirect_uri=http://localhost:8080&response_type=code", serverPath, clientID);
+                    String urlAccessRequest = util.getAuthLink();
                     System.out.println("Input system path: " + serverPath);
                     System.out.println("use this link to request the access code:\n" + urlAccessRequest);
                     System.out.println("\nwaiting for code...");
